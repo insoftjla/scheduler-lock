@@ -1,6 +1,8 @@
 package ru.insoftjla.locker.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -22,10 +24,10 @@ public class SchedulerLockDao {
     }
 
     private void validate() {
-        try (var connection = dataSource.getConnection()) {
-            var pstm = connection.prepareStatement(GET_BY_NAME_QUERY);
+        try (Connection connection = dataSource.getConnection()) {
+            PreparedStatement pstm = connection.prepareStatement(GET_BY_NAME_QUERY);
             pstm.setString(1, "InitializeQuery");
-            var rs = pstm.executeQuery();
+            ResultSet rs = pstm.executeQuery();
             rs.next();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -33,7 +35,7 @@ public class SchedulerLockDao {
     }
 
     public boolean doLock(String name, LocalDateTime lockedAt) {
-        try (var connection = dataSource.getConnection()) {
+        try (Connection connection = dataSource.getConnection()) {
             return doLock(connection, name, lockedAt);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -41,16 +43,16 @@ public class SchedulerLockDao {
     }
 
     private boolean doLock(Connection connection, String name, LocalDateTime lockedAt) throws SQLException {
-        var autoCommit = connection.getAutoCommit();
-        var transactionIsolation = connection.getTransactionIsolation();
+        boolean autoCommit = connection.getAutoCommit();
+        int transactionIsolation = connection.getTransactionIsolation();
         connection.setAutoCommit(false);
         connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
         try {
-            var now = LocalDateTime.now();
-            var pstm = connection.prepareStatement(GET_BY_NAME_AND_LOCKED_AT_QUERY);
+            LocalDateTime now = LocalDateTime.now();
+            PreparedStatement pstm = connection.prepareStatement(GET_BY_NAME_AND_LOCKED_AT_QUERY);
             pstm.setString(1, name);
             pstm.setTimestamp(2, Timestamp.valueOf(now));
-            var rs = pstm.executeQuery();
+            ResultSet rs = pstm.executeQuery();
             if (rs.next()) {
                 return false;
             }

@@ -23,15 +23,15 @@ public class SchedulerLock {
 
     @Around("@annotation(ru.insoftjla.locker.annotation.ScheduledLock)")
     public Object scheduledJobInvoke(ProceedingJoinPoint joinPoint) throws Throwable {
-        var annotation = ((MethodSignature) joinPoint.getSignature()).getMethod().getAnnotation(ScheduledLock.class);
-        var lockName = annotation.name();
-        var lockedAtFor = annotation.duration();
+        ScheduledLock annotation = ((MethodSignature) joinPoint.getSignature()).getMethod().getAnnotation(ScheduledLock.class);
+        String lockName = annotation.name();
+        String lockedAtFor = annotation.duration();
 
-        var duration = Duration.parse("PT" + lockedAtFor);
-        var locketAt = LocalDateTime.now().plus(duration);
+        Duration duration = Duration.parse("PT" + lockedAtFor);
+        LocalDateTime locketAt = LocalDateTime.now().plus(duration);
 
         if (!schedulerLockDao.doLock(lockName, locketAt)) {
-            log.info("The job is skipped because "+ lockName +" is locked");
+            log.info("The job is skipped because " + lockName + " is locked");
             return null;
         }
         return joinPoint.proceed();

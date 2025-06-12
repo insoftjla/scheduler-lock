@@ -2,21 +2,19 @@ package ru.insoftjla.locker;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Properties;
 import java.util.logging.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import ru.insoftjla.locker.annotation.ScheduledLock;
 import ru.insoftjla.locker.dao.SchedulerLockDao;
 
 @Aspect
 public class SchedulerLock {
 
-    @Autowired
-    private Environment env;
+    private Properties properties = new Properties();
 
     private Duration duration;
 
@@ -34,7 +32,7 @@ public class SchedulerLock {
         String lockName = annotation.name();
 
         if (duration == null) {
-            String lockedAtFor = env.getProperty(annotation.duration(), annotation.duration());
+            String lockedAtFor = properties.getProperty(annotation.duration(), annotation.duration());
             duration = Duration.parse("PT" + lockedAtFor);
         }
 
@@ -45,6 +43,10 @@ public class SchedulerLock {
             return null;
         }
         return joinPoint.proceed();
+    }
+
+    public void setProperties(Properties properties) {
+        this.properties = properties;
     }
 
 }

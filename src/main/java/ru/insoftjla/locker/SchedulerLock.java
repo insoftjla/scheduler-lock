@@ -2,6 +2,8 @@ package ru.insoftjla.locker;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -16,7 +18,7 @@ public class SchedulerLock {
 
     private Properties properties = new Properties();
 
-    private Duration duration;
+    private final Map<String, Duration> durations = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(SchedulerLockDao.class.getName());
 
@@ -31,12 +33,12 @@ public class SchedulerLock {
         ScheduledLock annotation = ((MethodSignature) joinPoint.getSignature()).getMethod().getAnnotation(ScheduledLock.class);
         String lockName = annotation.name();
 
-        if (duration == null) {
+        if (!durations.containsKey(lockName)) {
             String lockedAtFor = properties.getProperty(annotation.duration(), annotation.duration());
-            duration = Duration.parse("PT" + lockedAtFor);
+            durations.put(lockName, Duration.parse("PT" + lockedAtFor));
         }
 
-        LocalDateTime locketAt = LocalDateTime.now().plus(duration);
+        LocalDateTime locketAt = LocalDateTime.now().plus(durations.get(lockName));
 
         if (!schedulerLockDao.doLock(lockName, locketAt)) {
             log.info("The job is skipped because " + lockName + " is locked");
